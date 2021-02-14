@@ -18,7 +18,19 @@ class RepositoryViewModel(private val githubRepoRepository: GithubRepoRepository
     val getGithubRepo = MutableLiveData<PagingData<Item>>()
     private val queryLiveData = MutableLiveData<String>()
 
-    fun searchRepo(query: String) {
+    fun onSearchClick() = { query: String ->
+        if (query.isNotBlank()) {
+            searchRepo(query)
+        }
+    }
+
+//    Some times we need to keep function public for testing
+//    in that case we can use annotation @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
+//    where otherwise parameter can be private/protected/package private
+    /**
+     *
+     */
+    private fun searchRepo(query: String) {
         queryLiveData.value = query
         viewModelScope.launch {
             githubRepoRepository.getRepos(query = query, 20).cachedIn(this).collect {

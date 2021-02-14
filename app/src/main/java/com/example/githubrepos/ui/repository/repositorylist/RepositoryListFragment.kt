@@ -43,14 +43,13 @@ class RepositoryListFragment : BaseFragment<FragmentRepositoryListBinding, Repos
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         val query = savedInstanceState?.getString(LAST_SEARCH_QUERY) ?: DEFAULT_QUERY
-        repositoryViewModel.searchRepo(query)
+        repositoryViewModel.onSearchClick().invoke(query)
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         initAdapter()
         initSwipeToRefresh()
-        initSearch()
     }
 
     private fun initAdapter() {
@@ -62,18 +61,7 @@ class RepositoryListFragment : BaseFragment<FragmentRepositoryListBinding, Repos
             )
         }
 
-        repositoryListAdapter.itemClickListener = {
-            val bundle = bundleOf(
-                REPOSITORY_NAME to it?.name,
-                REPOSITORY_DESCRIPTION to it?.description,
-                REPOSITORY_CONTRIBUTOR_URL to it?.contributors_url,
-                REPOSITORY_ISSUES_URL to it?.issues_url
-            )
-            findNavController().navigate(
-                R.id.action_repositoryListFragment_to_repositoryDetailsFragment,
-                bundle
-            )
-        }
+        listItemClickListener()
 
         lifecycleScope.launchWhenCreated {
             repositoryListAdapter.loadStateFlow.collectLatest { loadStates ->
@@ -96,41 +84,22 @@ class RepositoryListFragment : BaseFragment<FragmentRepositoryListBinding, Repos
         }
     }
 
+    private fun listItemClickListener() {
+        repositoryListAdapter.itemClickListener = {
+            val bundle = bundleOf(
+                REPOSITORY_NAME to it?.name,
+                REPOSITORY_DESCRIPTION to it?.description,
+                REPOSITORY_CONTRIBUTOR_URL to it?.contributors_url,
+                REPOSITORY_ISSUES_URL to it?.issues_url
+            )
+            findNavController().navigate(
+                R.id.action_repositoryListFragment_to_repositoryDetailsFragment,
+                bundle
+            )
+        }
+    }
+
     private fun initSwipeToRefresh() {
         viewDataBinding?.swipeRefresh?.setOnRefreshListener { repositoryListAdapter.refresh() }
-    }
-
-    private fun initSearch() {
-        viewDataBinding?.searchRepo?.setOnEditorActionListener { _, actionId, _ ->
-            if (actionId == EditorInfo.IME_ACTION_GO || actionId == EditorInfo.IME_ACTION_SEARCH) {
-                getListOfRepo()
-                (getSystemService(
-                    requireContext(),
-                    InputMethodManager::class.java
-                ) as InputMethodManager).hideSoftInputFromWindow(
-                    viewDataBinding?.root?.windowToken,
-                    0
-                )
-                true
-            } else {
-                false
-            }
-        }
-        viewDataBinding?.searchRepo?.setOnKeyListener { _, keyCode, event ->
-            if (event.action == KeyEvent.ACTION_DOWN && keyCode == KeyEvent.KEYCODE_ENTER) {
-                getListOfRepo()
-                true
-            } else {
-                false
-            }
-        }
-    }
-
-    private fun getListOfRepo() {
-        viewDataBinding?.searchRepo?.text?.trim()?.toString()?.let {
-            if (it.isNotBlank()) {
-                repositoryViewModel.searchRepo(it)
-            }
-        }
     }
 }
