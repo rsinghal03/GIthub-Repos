@@ -15,9 +15,4 @@ class RepositoryListActivity : BaseActivity<ActivityRepositoryBinding>() {
 
     override var layoutId: Int = R.layout.activity_repository
 
-
-//    override fun onSaveInstanceState(outState: Bundle) {
-//        super.onSaveInstanceState(outState)
-//        outState.putString(LAST_SEARCH_QUERY, viewModel.lastQueryValue())
-//    }
 }

@@ -7,6 +7,8 @@ import retrofit2.http.GET
 import retrofit2.http.Query
 import retrofit2.http.Url
 
+// Example Apis
+
 //https://api.github.com/search/repositories?q=kotlin%20language:kotlin&page=1&per_page=100
 
 

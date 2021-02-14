@@ -1,11 +1,8 @@
 package com.example.githubrepos.ui.repository.repositorylist
 
 import android.os.Bundle
-import android.view.KeyEvent
 import android.view.View
-import android.view.inputmethod.EditorInfo
-import android.view.inputmethod.InputMethodManager
-import androidx.core.content.ContextCompat.getSystemService
+import android.widget.Toast
 import androidx.core.os.bundleOf
 import androidx.databinding.library.baseAdapters.BR
 import androidx.lifecycle.lifecycleScope
@@ -19,10 +16,7 @@ import com.example.githubrepos.util.REPOSITORY_CONTRIBUTOR_URL
 import com.example.githubrepos.util.REPOSITORY_DESCRIPTION
 import com.example.githubrepos.util.REPOSITORY_ISSUES_URL
 import com.example.githubrepos.util.REPOSITORY_NAME
-import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.flow.distinctUntilChangedBy
-import kotlinx.coroutines.flow.filter
 import org.koin.androidx.viewmodel.ext.android.viewModel
 
 private const val LAST_SEARCH_QUERY: String = "last_search_query"
@@ -52,7 +46,23 @@ class RepositoryListFragment : BaseFragment<FragmentRepositoryListBinding, Repos
         initSwipeToRefresh()
     }
 
+    /**
+     * Initialise adapter
+     *
+     */
     private fun initAdapter() {
+        setRecyclerAttr()
+        listItemClickListener()
+        addLoadStateListener()
+        registerProgressBar()
+        observePagingData()
+    }
+
+    /**
+     * Set recycler view property
+     *
+     */
+    private fun setRecyclerAttr() {
         viewDataBinding?.list?.run {
             adapter = repositoryListAdapter
             setHasFixedSize(true)
@@ -60,30 +70,54 @@ class RepositoryListFragment : BaseFragment<FragmentRepositoryListBinding, Repos
                 footer = RepositoryListLoadStateAdapter { repositoryListAdapter.retry() }
             )
         }
+    }
 
-        listItemClickListener()
+    /**
+     * Observe paging data source and submit data to adapter
+     *
+     */
+    private fun observePagingData() {
+        repositoryViewModel.subscribeToPagingData().observe(viewLifecycleOwner, {
+            repositoryListAdapter.submitData(lifecycle, it)
+        })
+    }
 
+    /**
+     * Show progress bar when Load state is Loading
+     *
+     */
+    private fun registerProgressBar() {
         lifecycleScope.launchWhenCreated {
             repositoryListAdapter.loadStateFlow.collectLatest { loadStates ->
                 viewDataBinding?.swipeRefresh?.isRefreshing =
                     loadStates.refresh is LoadState.Loading
             }
         }
+    }
 
-        repositoryViewModel.getGithubRepo.observe(viewLifecycleOwner, {
-            repositoryListAdapter.submitData(lifecycle, it)
-        })
-
-        lifecycleScope.launchWhenCreated {
-            repositoryListAdapter.loadStateFlow
-                // Only emit when REFRESH LoadState for RemoteMediator changes.
-                .distinctUntilChangedBy { it.refresh }
-                // Only react to cases where Remote REFRESH completes i.e., NotLoading.
-                .filter { it.refresh is LoadState.NotLoading }
-                .collect { viewDataBinding?.list?.scrollToPosition(0) }
+    /**
+     * Add load state listener to show error state of the paging source data
+     *
+     */
+    private fun addLoadStateListener() {
+        repositoryListAdapter.addLoadStateListener {
+            when (it.refresh) {
+                is LoadState.Error -> {
+                    Toast.makeText(
+                        requireContext(),
+                        (it.refresh as LoadState.Error).error.localizedMessage,
+                        Toast.LENGTH_SHORT
+                    ).show()
+                }
+                else -> Unit
+            }
         }
     }
 
+    /**
+     * on list item click navigate to details fragment [com.example.githubrepos.ui.repository.repositorydetails.RepositoryDetailsFragment]
+     *
+     */
     private fun listItemClickListener() {
         repositoryListAdapter.itemClickListener = {
             val bundle = bundleOf(
@@ -99,6 +133,10 @@ class RepositoryListFragment : BaseFragment<FragmentRepositoryListBinding, Repos
         }
     }
 
+    /**
+     * sets the refresh listener
+     *
+     */
     private fun initSwipeToRefresh() {
         viewDataBinding?.swipeRefresh?.setOnRefreshListener { repositoryListAdapter.refresh() }
     }
