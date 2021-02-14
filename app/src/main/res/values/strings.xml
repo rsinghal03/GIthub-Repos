@@ -1,0 +1,11 @@
+<resources>
+    <string name="app_name">GithubRepos</string>
+    <string name="search_hint">GitHub Repository</string>
+    <string name="no_results">No results 😓</string>
+    <string name="language">Language: %s</string>
+    <string name="retry">Retry</string>
+    <string name="contributor_label">Contributors</string>
+    <string name="issues_label">Issues</string>
+    <string name="stars">stars</string>
+    <string name="forks">forks</string>
+</resources>
